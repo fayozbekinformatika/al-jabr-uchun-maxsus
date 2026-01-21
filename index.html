@@ -97,7 +97,7 @@ def start(message):
             chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                const response = await fetch('http://127.0.0.1:8000/simulate', {
+                const response = await fetch('https://al-jabr-uchun-maxsus.onrender.com/simulate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -146,4 +146,5 @@ def start(message):
         }
     </script>
 </body>
+
 </html> 
