@@ -105,7 +105,9 @@ def start(message):
                         chat_history: chatHistory
                     })
                 });
-
+@app.get("/")
+async def home():
+    return {"status": "OK", "message": "AI Bot Simulator Backend ishlayapti!"}
                 const data = await response.json();
                 typingIndicator.style.display = 'none';
 
@@ -148,3 +150,4 @@ def start(message):
 </body>
 
 </html> 
+
