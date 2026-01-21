@@ -12,18 +12,7 @@
         .bot-msg { background-color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #334155; }
         .typing { font-style: italic; color: #94a3b8; font-size: 12px; margin-left: 10px; display: none; }
         textarea { font-family: 'Consolas', 'Monaco', monospace; }
-        
-        /* Tugmalar uchun chiroyli stil */
-        .bot-button {
-            background-color: #334155;
-            border: 1px solid #475569;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            margin: 4px;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
+        .bot-button { background-color: #334155; border: 1px solid #475569; color: white; padding: 8px 16px; border-radius: 8px; margin: 4px; font-size: 13px; transition: all 0.2s; cursor: pointer; }
         .bot-button:hover { background-color: #475569; border-color: #64748b; }
     </style>
 </head>
@@ -57,13 +46,11 @@ def start(message):
         </div>
 
         <div id="chatBox" class="flex-1 p-4 overflow-y-auto flex flex-col"></div>
-        
         <div id="keyboardArea" class="p-2 flex flex-wrap justify-center bg-slate-900"></div>
-
-        <div id="typingIndicator" class="typing mb-2">Bot yozmoqda...</div>
+        <div id="typingIndicator" class="typing mb-2 ml-4">Bot yozmoqda...</div>
 
         <div class="p-4 bg-slate-800 border-t border-gray-700 flex">
-            <input id="userMessage" type="text" class="flex-1 bg-gray-700 text-white p-3 rounded-l-lg focus:outline-none" placeholder="Xabar yozing..." onkeypress="handleEnter(event)">
+            <input id="userMessage" type="text" class="flex-1 bg-gray-700 text-white p-3 rounded-l-lg focus:outline-none" placeholder="Xabar yozing..." onkeypress="if(event.key === 'Enter') sendMessage()">
             <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-r-lg font-bold transition">Send</button>
         </div>
     </div>
@@ -77,22 +64,15 @@ def start(message):
         
         let chatHistory = [];
 
-        function handleEnter(e) {
-            if (e.key === 'Enter') sendMessage();
-        }
-
         async function sendMessage(manualText = null) {
             const text = manualText || userMessageInput.value.trim();
             if (!text) return;
 
-            // 1. Foydalanuvchi xabari
             appendMessage(text, 'user');
             userMessageInput.value = '';
-            keyboardArea.innerHTML = ''; // Tugmalarni vaqtincha yashirish
-            
+            keyboardArea.innerHTML = '';
             chatHistory.push({ sender: 'user', text: text });
 
-            // 2. Yuklanish holati
             typingIndicator.style.display = 'block';
             chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -105,25 +85,21 @@ def start(message):
                         chat_history: chatHistory
                     })
                 });
-@app.get("/")
-async def home():
-    return {"status": "OK", "message": "AI Bot Simulator Backend ishlayapti!"}
+
                 const data = await response.json();
                 typingIndicator.style.display = 'none';
 
-                // 3. Bot javobi (Matn)
-                const replyText = data.text || data.reply || "Xabar yo'q";
+                const replyText = data.text || data.reply || "Javob yo'q";
                 appendMessage(replyText, 'bot');
                 chatHistory.push({ sender: 'bot', text: replyText });
 
-                // 4. Tugmalarni chiqarish
                 if (data.buttons && data.buttons.length > 0) {
                     renderButtons(data.buttons);
                 }
 
             } catch (error) {
                 typingIndicator.style.display = 'none';
-                appendMessage("Xatolik: Server javob bermadi.", 'bot');
+                appendMessage("❌ Xatolik: Serverga ulanib bo'lmadi.", 'bot');
             }
         }
 
@@ -136,18 +112,17 @@ async def home():
         }
 
         function renderButtons(buttons) {
-            keyboardArea.innerHTML = ''; // Tozalash
+            keyboardArea.innerHTML = '';
             buttons.forEach(btnText => {
                 const btn = document.createElement('button');
                 btn.className = 'bot-button';
                 btn.innerText = btnText;
-                btn.onclick = () => sendMessage(btnText); // Tugma bosilsa xabar yuboradi
+                btn.onclick = () => sendMessage(btnText);
                 keyboardArea.appendChild(btn);
             });
-            chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
 </body>
+</html>
 
-</html> 
 
