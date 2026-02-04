@@ -1,23 +1,27 @@
 import uvicorn
 import json
-import os  # Tizim o'zgaruvchilari bilan ishlash uchun
+import os
+import re
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse # <--- HTML qaytarish uchun kerak
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 
-# 1. Xavfsiz usul: API kalitni Environment Variable orqali olamiz
-# Render sozlamalarida OPENAI_API_KEY nomli o'zgaruvchi yaratishingiz kerak
-api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key)
+# API Kalit (OpenRouter)
+api_key = os.getenv("OPENROUTER_API_KEY")
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=api_key,
+)
 
 app = FastAPI()
 
-# CORS sozlamalari (Frontend ulanishi uchun)
 app.add_middleware(
-    CORSMiddleware, 
-    allow_origins=["*"], 
-    allow_methods=["*"], 
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
     allow_headers=["*"]
 )
 
@@ -25,10 +29,16 @@ class SimulationRequest(BaseModel):
     bot_code: str
     chat_history: list
 
-# 2. Root yo'nalishi: Brauzerda kirganda "Not Found" chiqmasligi uchun
-@app.get("/")
+# --- ASOSIY O'ZGARISH SHU YERDA ---
+# Brauzerda saytni ochganda index.html faylini yuklaymiz
+@app.get("/", response_class=HTMLResponse)
 async def read_root():
-    return {"status": "active", "message": "AI Bot Simulator API ishlamoqda!"}
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Xatolik! index.html fayli topilmadi.</h1>"
+# ----------------------------------
 
 @app.post("/simulate")
 async def simulate_bot(request: SimulationRequest):
@@ -40,6 +50,7 @@ async def simulate_bot(request: SimulationRequest):
             "1. KODNI TEKSHIRISH: Agar Python kodida xato bo'lsa, 'text' maydonida FAQAT xato haqida xabar ber.\n"
             "2. TUGMALAR: markup.add() orqali qo'shilgan tugmalarni 'buttons' massiviga chiqar.\n"
             "3. JAVOB FORMATI: Doimo JSON qaytar: {'text': '...', 'buttons': [...]}\n"
+            "4. MUHIM: Javobing faqat JSON bo'lsin, markdown ishlatma."
         )
 
         messages = [
@@ -52,20 +63,26 @@ async def simulate_bot(request: SimulationRequest):
             messages.append({"role": role, "content": m['text']})
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="deepseek/deepseek-r1:free", # Yoki: google/gemini-2.0-flash-lite-preview-02-05:free
             messages=messages,
-            response_format={ "type": "json_object" },
-            temperature=0 
+            temperature=0
         )
 
-        return json.loads(response.choices[0].message.content)
+        content = response.choices[0].message.content
+        
+        # DeepSeek va boshqa modellardan kelgan javobni tozalash
+        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.replace("```", "").strip()
+
+        return json.loads(content)
 
     except Exception as e:
-        return {"text": f"❌ Simulyatsiya xatosi: {str(e)}", "buttons": []}
+        return {"text": f"❌ Tizim xatosi: {str(e)}", "buttons": []}
 
-# 3. Render uchun PORT va HOST sozlamalari
 if __name__ == "__main__":
-    # Render o'zi beradigan portni olamiz, bo'lmasa 8000
     port = int(os.environ.get("PORT", 8000))
-    # Host 0.0.0.0 bo'lishi shart, aks holda server tashqariga chiqmaydi
+    # Ekranda 127.0.0.1:8000 manzilini ochishingiz mumkin
     uvicorn.run(app, host="0.0.0.0", port=port)
