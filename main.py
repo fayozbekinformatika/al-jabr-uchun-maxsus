@@ -63,7 +63,7 @@ async def simulate_bot(request: SimulationRequest):
             messages.append({"role": role, "content": m['text']})
 
         response = client.chat.completions.create(
-            model="google/gemini-2.0-flash-lite-preview-02-05:free", # Yoki: google/gemini-2.0-flash-lite-preview-02-05:free
+            model="meta-llama/llama-3.2-3b-instruct:free", # Yoki: google/gemini-2.0-flash-lite-preview-02-05:free
             messages=messages,
             temperature=0
         )
@@ -86,6 +86,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     # Ekranda 127.0.0.1:8000 manzilini ochishingiz mumkin
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
